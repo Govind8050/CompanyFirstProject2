@@ -1,49 +1,39 @@
-const APP_ID = "YOUR_APP_ID";   // Replace with your Edamam APP_ID
-const APP_KEY = "YOUR_APP_KEY"; // Replace with your Edamam APP_KEY
+const appId = "YOUR_APP_ID";  // 👈 yaha apna App ID dalo
+const appKey = "YOUR_APP_KEY"; // 👈 yaha apna App Key dalo
 
-async function searchRecipes() {
-  const query = document.getElementById("searchInput").value.trim();
-  const message = document.getElementById("message");
-  const results = document.getElementById("results");
+async function getRecipes(query) {
+    const url = `https://api.edamam.com/search?q=${query}&app_id=${appId}&app_key=${appKey}`;
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        const data = await response.json();
 
-  results.innerHTML = "";
-  if (!query) {
-    message.textContent = "⚠️ Please enter a recipe name!";
-    return;
-  }
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = "";
 
-  message.textContent = "⏳ Loading recipes...";
+        if (data.hits.length === 0) {
+            resultsDiv.innerHTML = "<p>No recipes found.</p>";
+            return;
+        }
 
-  try {
-    const response = await fetch(
-      `https://api.edamam.com/search?q=${query}&app_id=${APP_ID}&app_key=${APP_KEY}`
-    );
+        data.hits.forEach(hit => {
+            const recipe = hit.recipe;
+            const recipeDiv = document.createElement("div");
+            recipeDiv.classList.add("recipe");
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch recipes");
+            recipeDiv.innerHTML = `
+                <h3>${recipe.label}</h3>
+                <img src="${recipe.image}" alt="${recipe.label}">
+                <a href="${recipe.url}" target="_blank">View Recipe</a>
+            `;
+
+            resultsDiv.appendChild(recipeDiv);
+        });
+    } catch (error) {
+        document.getElementById("results").innerHTML = `<p style="color:red;">❌ Error fetching data - please try again.</p>`;
+        console.error("Error fetching recipes:", error);
     }
-
-    const data = await response.json();
-
-    if (data.hits.length === 0) {
-      message.textContent = "❌ No recipes found. Try another keyword.";
-      return;
-    }
-
-    message.textContent = "";
-    data.hits.forEach(hit => {
-      const recipe = hit.recipe;
-      const li = document.createElement("li");
-      li.classList.add("card");
-      li.innerHTML = `
-        <img src="${recipe.image}" alt="${recipe.label}">
-        <h3>${recipe.label}</h3>
-        <a href="${recipe.url}" target="_blank">View Recipe</a>
-      `;
-      results.appendChild(li);
-    });
-  } catch (error) {
-    message.textContent = "❌ Error fetching data. Please try again.";
-    console.error(error);
-  }
 }
